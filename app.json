@@ -1,10 +1,15 @@
 {
   "expo": {
-    "name": "wheel-of-fortune",
+    "name": "Wheel of Fortune",
     "slug": "wheel-of-fortune",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "scheme": "wheeloffortune",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -19,7 +24,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.loborich.wheeloffortune"
     },
     "web": {
       "output": "static",
@@ -43,6 +49,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4c00a54a-d2fb-425d-884e-007eed9591bc"
+      }
     }
   }
 }
