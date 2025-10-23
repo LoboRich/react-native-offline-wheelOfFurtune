@@ -1,6 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import { Button, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Button,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import Wheel from '../../src/components/Wheel';
 
 export default function WheelScreen() {
@@ -23,7 +34,7 @@ export default function WheelScreen() {
     loadData();
   }, []);
 
-  // Save students and winner whenever they change
+  // Save to storage
   useEffect(() => {
     AsyncStorage.setItem('students', JSON.stringify(students));
   }, [students]);
@@ -38,6 +49,12 @@ export default function WheelScreen() {
     setName('');
   };
 
+  const handlePaste = (text) => {
+    // Split by newlines or commas (for Excel-style paste)
+    const list = text.split(/\r?\n|,/).map((s) => s.trim()).filter(Boolean);
+    setStudents((prev) => [...prev, ...list]);
+  };
+
   const deleteStudent = (index) => {
     const updated = students.filter((_, i) => i !== index);
     setStudents(updated);
@@ -50,48 +67,79 @@ export default function WheelScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>🎡 Wheel of Fortune</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={80}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>🎡 Wheel of Fortune</Text>
 
-      <Wheel students={students} onWinner={setWinner} />
+        <Wheel students={students} onWinner={setWinner} />
 
-      {winner && <Text style={styles.winner}>🎉 Winner: {winner}!</Text>}
+        {winner && <Text style={styles.winner}>🎉 Winner: {winner}!</Text>}
 
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter student name"
-          value={name}
-          onChangeText={setName}
+        <View style={styles.inputRow}>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter or paste student names"
+            value={name}
+            onChangeText={(text) => {
+              if (text.includes('\n') || text.includes(',')) {
+                const names = text
+                  .split(/[\n,]+/)
+                  .map((n) => n.trim())
+                  .filter((n) => n !== '');
+                if (names.length > 0) {
+                  setStudents((prev) => [...prev, ...names]);
+                }
+                setName(''); // clear input
+              } else {
+                setName(text);
+              }
+            }}
+            multiline
+          />
+          <TouchableOpacity onPress={addStudent} style={styles.addBtn}>
+            <Text style={styles.addText}>➕</Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          data={students}
+          keyExtractor={(item, index) => index.toString()}
+          ListEmptyComponent={<Text style={styles.empty}>No students yet. Add one!</Text>}
+          renderItem={({ item, index }) => (
+            <View style={styles.studentRow}>
+              <Text style={styles.studentName}>
+                {index + 1}. {item}
+              </Text>
+              <TouchableOpacity onPress={() => deleteStudent(index)} style={styles.deleteBtn}>
+                <Text style={styles.deleteText}>🗑️</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          scrollEnabled={false}  // 👈 add this line
         />
-        <Button title="Add" onPress={addStudent} />
-      </View>
 
-      <FlatList
-        data={students}
-        keyExtractor={(item, index) => index.toString()}
-        ListEmptyComponent={<Text style={styles.empty}>No students yet. Add one!</Text>}
-        renderItem={({ item, index }) => (
-          <View style={styles.studentRow}>
-            <Text style={styles.studentName}>{index + 1}. {item}</Text>
-            <TouchableOpacity onPress={() => deleteStudent(index)} style={styles.deleteBtn}>
-              <Text style={styles.deleteText}>🗑️</Text>
-            </TouchableOpacity>
+        {students.length > 0 && (
+          <View style={styles.buttonRow}>
+            <Button title="🧹 Delete All" color="#d62828" onPress={deleteAll} />
           </View>
         )}
-      />
-
-      {students.length > 0 && (
-        <View style={styles.buttonRow}>
-          <Button title="🧹 Delete All" color="#d62828" onPress={deleteAll} />
-        </View>
-      )}
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, alignItems: 'center', backgroundColor: '#fff' },
+  scrollContainer: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
   title: { fontSize: 24, fontWeight: 'bold', marginVertical: 20 },
   inputRow: { flexDirection: 'row', marginVertical: 10, width: '100%' },
   input: {
@@ -101,6 +149,8 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     flex: 1,
     marginRight: 8,
+    minHeight: 40,
+    maxHeight: 120,
   },
   studentRow: {
     flexDirection: 'row',
