@@ -1,68 +1,121 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Button, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Wheel from '../../src/components/Wheel';
-import { loadStudents, saveStudents } from '../../src/storage/storage';
+
 export default function WheelScreen() {
   const [students, setStudents] = useState([]);
   const [name, setName] = useState('');
   const [winner, setWinner] = useState(null);
 
+  // Load saved data on mount
   useEffect(() => {
-    (async () => {
-      const saved = await loadStudents();
-      setStudents(saved);
-    })();
+    const loadData = async () => {
+      try {
+        const storedStudents = await AsyncStorage.getItem('students');
+        const storedWinner = await AsyncStorage.getItem('winner');
+        if (storedStudents) setStudents(JSON.parse(storedStudents));
+        if (storedWinner) setWinner(storedWinner);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+    loadData();
   }, []);
 
-  const addStudent = async () => {
-    if (!name.trim()) return;
-    const updated = [...students, { name }];
-    setStudents(updated);
+  // Save students and winner whenever they change
+  useEffect(() => {
+    AsyncStorage.setItem('students', JSON.stringify(students));
+  }, [students]);
+
+  useEffect(() => {
+    if (winner) AsyncStorage.setItem('winner', winner);
+  }, [winner]);
+
+  const addStudent = () => {
+    if (name.trim() === '') return;
+    setStudents((prev) => [...prev, name.trim()]);
     setName('');
-    await saveStudents(updated);
+  };
+
+  const deleteStudent = (index) => {
+    const updated = students.filter((_, i) => i !== index);
+    setStudents(updated);
+  };
+
+  const deleteAll = async () => {
+    setStudents([]);
+    setWinner(null);
+    await AsyncStorage.multiRemove(['students', 'winner']);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.title}>🎡 Wheel of Fortune</Text>
 
-      <Wheel students={students.map(s => s.name)} onWinner={setWinner} />
+      <Wheel students={students} onWinner={setWinner} />
 
-      <View style={styles.form}>
+      {winner && <Text style={styles.winner}>🎉 Winner: {winner}!</Text>}
+
+      <View style={styles.inputRow}>
         <TextInput
+          style={styles.input}
           placeholder="Enter student name"
           value={name}
           onChangeText={setName}
-          style={styles.input}
         />
         <Button title="Add" onPress={addStudent} />
       </View>
 
-      {/* <FlatList
+      <FlatList
         data={students}
-        style={{ marginTop: 20 }}
-        keyExtractor={(_, i) => i.toString()}
-        renderItem={({ item }) => <Text style={styles.item}>🎓 {item.name}</Text>}
-      /> */}
+        keyExtractor={(item, index) => index.toString()}
+        ListEmptyComponent={<Text style={styles.empty}>No students yet. Add one!</Text>}
+        renderItem={({ item, index }) => (
+          <View style={styles.studentRow}>
+            <Text style={styles.studentName}>{index + 1}. {item}</Text>
+            <TouchableOpacity onPress={() => deleteStudent(index)} style={styles.deleteBtn}>
+              <Text style={styles.deleteText}>🗑️</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      />
 
-      {winner && <Text style={styles.winner}>🏆 Winner: {winner}</Text>}
-    </SafeAreaView>
+      {students.length > 0 && (
+        <View style={styles.buttonRow}>
+          <Button title="🧹 Delete All" color="#d62828" onPress={deleteAll} />
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', padding: 20, backgroundColor: '#f8f9fa' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-  form: { flexDirection: 'row', marginVertical: 10 },
+  container: { flex: 1, padding: 20, alignItems: 'center', backgroundColor: '#fff' },
+  title: { fontSize: 24, fontWeight: 'bold', marginVertical: 20 },
+  inputRow: { flexDirection: 'row', marginVertical: 10, width: '100%' },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 6,
     padding: 8,
-    width: 180,
+    borderRadius: 5,
+    flex: 1,
     marginRight: 8,
   },
-  item: { fontSize: 16, color: '#333' },
-  winner: { marginTop: 15, fontSize: 18, fontWeight: 'bold', color: '#e63946' },
+  studentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    padding: 10,
+    borderRadius: 8,
+    marginVertical: 4,
+    width: '100%',
+  },
+  studentName: { fontSize: 16 },
+  deleteBtn: { paddingHorizontal: 10 },
+  deleteText: { fontSize: 18 },
+  empty: { color: '#aaa', marginTop: 10 },
+  winner: { fontSize: 18, fontWeight: 'bold', color: '#007bff', marginVertical: 10 },
+  buttonRow: { marginTop: 10 },
 });
