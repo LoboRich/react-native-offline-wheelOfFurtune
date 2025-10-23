@@ -3,6 +3,7 @@ import { Animated, Button, Easing, StyleSheet, View } from 'react-native';
 import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
 
 export default function Wheel({ students = [], onWinner }) {
+  const [winner, setWinner] = useState(null);
   const rotation = useRef(new Animated.Value(0)).current;
   const [spinning, setSpinning] = useState(false);
   const wheelSize = 300;
@@ -28,21 +29,30 @@ export default function Wheel({ students = [], onWinner }) {
   });
 
   const spinWheel = () => {
-    if (spinning) return;
+    if (spinning || students.length === 0) return;
+  
+    const numSegments = students.length;
+    const segmentAngle = 360 / numSegments;
+    const randomIndex = Math.floor(Math.random() * numSegments);
+    const selected = students[randomIndex];
     setSpinning(true);
-
-    const randomSpin = 3600 + Math.random() * 360;
+  
+    // Reset rotation to prevent buildup
+    rotation.setValue(0);
+  
+    const baseRotation = 360 * 5; // 5 full spins
+    const offsetToCenter = segmentAngle / 2;
+    const finalRotation = baseRotation + (360 - randomIndex * segmentAngle - offsetToCenter + 270);
+  
     Animated.timing(rotation, {
-      toValue: randomSpin,
-      duration: 4000,
-      easing: Easing.out(Easing.quad),
+      toValue: finalRotation,
+      duration: 5000,
       useNativeDriver: true,
+      easing: Easing.out(Easing.cubic),
     }).start(() => {
-      const normalized = randomSpin % 360;
-      const winnerIndex = Math.floor(((360 - normalized) / segmentAngle) % numSegments);
-      const winner = segments[winnerIndex].label;
       setSpinning(false);
-      onWinner?.(winner);
+      setWinner(selected);
+      if (onWinner) onWinner(selected);
     });
   };
 
@@ -54,7 +64,18 @@ export default function Wheel({ students = [], onWinner }) {
   return (
     <View style={styles.container}>
       <View>
-        <Animated.View style={{ transform: [{ rotate }] }}>
+        <Animated.View
+          style={{
+            transform: [
+              {
+                rotate: rotation.interpolate({
+                  inputRange: [0, 360],
+                  outputRange: ['0deg', '360deg'],
+                }),
+              },
+            ],
+          }}
+        >
           <Svg width={wheelSize} height={wheelSize} viewBox={`0 0 ${wheelSize} ${wheelSize}`}>
             <G>
               {segments.map((seg, i) => (
@@ -96,16 +117,14 @@ const styles = StyleSheet.create({
   container: { alignItems: 'center', marginVertical: 20 },
   pointer: {
     position: 'absolute',
-    top: 0,
+    top: -10,
     left: '50%',
-    marginLeft: -10,
+    marginLeft: -30,
     width: 0,
     height: 0,
     borderLeftWidth: 10,
     borderRightWidth: 10,
     borderBottomWidth: 20,
-    borderStyle: 'solid',
-    backgroundColor: 'transparent',
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderBottomColor: 'red',
