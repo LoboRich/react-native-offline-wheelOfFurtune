@@ -10,7 +10,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "predeploy": "expo export",
+    "predeploy": "npx expo export --platform web",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
