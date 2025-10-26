@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import Wheel from '../../src/components/Wheel';
@@ -19,6 +20,8 @@ export default function WheelScreen() {
   const [name, setName] = useState('');
   const [winner, setWinner] = useState(null);
 
+  const { width } = useWindowDimensions();
+  const isWeb = width >= 768;
   // Load saved data on mount
   useEffect(() => {
     const loadData = async () => {
@@ -73,62 +76,75 @@ export default function WheelScreen() {
       keyboardVerticalOffset={80}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={[
+          styles.scrollContainer,
+          isWeb && styles.webLayout,
+        ]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>🎡 Wheel of Fortune</Text>
-
-        <Wheel students={students} onWinner={setWinner} />
-
-        {winner && <Text style={styles.winner}>🎉 Winner: {winner}!</Text>}
-
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter or paste student names"
-            value={name}
-            onChangeText={(text) => {
-              if (text.includes('\n') || text.includes(',')) {
-                const names = text
-                  .split(/[\n,]+/)
-                  .map((n) => n.trim())
-                  .filter((n) => n !== '');
-                if (names.length > 0) {
-                  setStudents((prev) => [...prev, ...names]);
-                }
-                setName(''); // clear input
-              } else {
-                setName(text);
-              }
-            }}
-            multiline
-          />
-          <TouchableOpacity onPress={addStudent} style={styles.addBtn}>
-            <Text style={styles.addText}>➕</Text>
-          </TouchableOpacity>
+        {/* LEFT SIDE (Wheel) */}
+        <View style={[styles.leftPanel, isWeb && styles.webLeft]}>
+          <Text style={styles.title}>🎡 Wheel of Fortune</Text>
+          <Wheel students={students} onWinner={setWinner} />
+          {winner && <Text style={styles.winner}>🎉 Winner: {winner}!</Text>}
         </View>
-        <FlatList
-          data={students}
-          keyExtractor={(item, index) => index.toString()}
-          ListEmptyComponent={<Text style={styles.empty}>No students yet. Add one!</Text>}
-          renderItem={({ item, index }) => (
-            <View style={styles.studentRow}>
-              <Text style={styles.studentName}>
-                {index + 1}. {item}
-              </Text>
-              <TouchableOpacity onPress={() => deleteStudent(index)} style={styles.deleteBtn}>
-                <Text style={styles.deleteText}>🗑️</Text>
-              </TouchableOpacity>
+
+        {/* RIGHT SIDE (Input + List) */}
+        <View style={[styles.rightPanel, isWeb && styles.webRight]}>
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter or paste student names"
+              value={name}
+              onChangeText={(text) => {
+                if (text.includes('\n') || text.includes(',')) {
+                  const names = text
+                    .split(/[\n,]+/)
+                    .map((n) => n.trim())
+                    .filter((n) => n !== '');
+                  if (names.length > 0) {
+                    setStudents((prev) => [...prev, ...names]);
+                  }
+                  setName('');
+                } else {
+                  setName(text);
+                }
+              }}
+              multiline
+            />
+            <TouchableOpacity onPress={addStudent} style={styles.addBtn}>
+              <Text style={styles.addText}>➕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={students}
+            keyExtractor={(item, index) => index.toString()}
+            ListEmptyComponent={
+              <Text style={styles.empty}>No students yet. Add one!</Text>
+            }
+            renderItem={({ item, index }) => (
+              <View style={styles.studentRow}>
+                <Text style={styles.studentName}>
+                  {index + 1}. {item}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => deleteStudent(index)}
+                  style={styles.deleteBtn}
+                >
+                  <Text style={styles.deleteText}>🗑️</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            scrollEnabled={false}
+          />
+
+          {students.length > 0 && (
+            <View style={styles.buttonRow}>
+              <Button title="🧹 Delete All" color="#d62828" onPress={deleteAll} />
             </View>
           )}
-          scrollEnabled={false}  // 👈 add this line
-        />
-
-        {students.length > 0 && (
-          <View style={styles.buttonRow}>
-            <Button title="🧹 Delete All" color="#d62828" onPress={deleteAll} />
-          </View>
-        )}
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -136,36 +152,89 @@ export default function WheelScreen() {
 
 const styles = StyleSheet.create({
   scrollContainer: {
+    flexGrow: 1,
     padding: 20,
-    alignItems: 'center',
     backgroundColor: '#fff',
+    justifyContent: 'center',
   },
-  title: { fontSize: 24, fontWeight: 'bold', marginVertical: 20 },
-  inputRow: { flexDirection: 'row', marginVertical: 10, width: '100%' },
+  webLayout: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: 30,
+  },
+  leftPanel: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  webLeft: {
+    flex: 1,
+  },
+  rightPanel: {
+    marginTop: 30,
+  },
+  webRight: {
+    flex: 1,
+    maxWidth: 400,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  winner: {
+    marginTop: 10,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#0077b6',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 15,
+  },
   input: {
+    flex: 1,
     borderWidth: 1,
     borderColor: '#ccc',
-    padding: 8,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 8,
-    minHeight: 40,
-    maxHeight: 120,
+    padding: 10,
+    borderRadius: 8,
+    fontSize: 16,
+  },
+  addBtn: {
+    marginLeft: 10,
+    backgroundColor: '#0077b6',
+    padding: 10,
+    borderRadius: 8,
+  },
+  addText: {
+    color: '#fff',
+    fontSize: 20,
   },
   studentRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f8f9fa',
-    padding: 10,
-    borderRadius: 8,
-    marginVertical: 4,
-    width: '100%',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderColor: '#eee',
+    paddingVertical: 8,
   },
-  studentName: { fontSize: 16 },
-  deleteBtn: { paddingHorizontal: 10 },
-  deleteText: { fontSize: 18 },
-  empty: { color: '#aaa', marginTop: 10 },
-  winner: { fontSize: 18, fontWeight: 'bold', color: '#007bff', marginVertical: 10 },
-  buttonRow: { marginTop: 10 },
+  studentName: {
+    fontSize: 16,
+  },
+  deleteBtn: {
+    paddingHorizontal: 10,
+  },
+  deleteText: {
+    fontSize: 18,
+    color: '#d62828',
+  },
+  empty: {
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 10,
+  },
+  buttonRow: {
+    marginTop: 20,
+  },
 });

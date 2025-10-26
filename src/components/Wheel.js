@@ -1,12 +1,17 @@
 import React, { useRef, useState } from 'react';
-import { Animated, Button, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Button, Easing, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
 
 export default function Wheel({ students = [], onWinner }) {
   const [winner, setWinner] = useState(null);
   const rotation = useRef(new Animated.Value(0)).current;
   const [spinning, setSpinning] = useState(false);
-  const wheelSize = 300;
+  const { width } = useWindowDimensions();
+
+  // ✅ Dynamic wheel size based on platform and screen size
+  const wheelSize = Platform.OS === 'web'
+    ? Math.min(width * 0.5, 500) // Up to 500px on large web screens
+    : Math.min(width * 0.8, 320); // Fit smaller on mobile
 
   const numSegments = students.length || 6;
   const segmentAngle = 360 / numSegments;
@@ -30,20 +35,16 @@ export default function Wheel({ students = [], onWinner }) {
 
   const spinWheel = () => {
     if (spinning || students.length === 0) return;
-  
-    const numSegments = students.length;
-    const segmentAngle = 360 / numSegments;
+
     const randomIndex = Math.floor(Math.random() * numSegments);
     const selected = students[randomIndex];
     setSpinning(true);
-  
-    // Reset rotation to prevent buildup
+
     rotation.setValue(0);
-  
-    const baseRotation = 360 * 5; // 5 full spins
+    const baseRotation = 360 * 5;
     const offsetToCenter = segmentAngle / 2;
     const finalRotation = baseRotation + (360 - randomIndex * segmentAngle - offsetToCenter + 270);
-  
+
     Animated.timing(rotation, {
       toValue: finalRotation,
       duration: 5000,
@@ -56,14 +57,9 @@ export default function Wheel({ students = [], onWinner }) {
     });
   };
 
-  const rotate = rotation.interpolate({
-    inputRange: [0, 360],
-    outputRange: ['0deg', '360deg'],
-  });
-
   return (
     <View style={styles.container}>
-      <View>
+      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
         <Animated.View
           style={{
             transform: [
@@ -92,7 +88,7 @@ export default function Wheel({ students = [], onWinner }) {
                     x={x}
                     y={y}
                     fill="#000"
-                    fontSize="12"
+                    fontSize={Math.max(12, wheelSize * 0.04)}
                     fontWeight="bold"
                     textAnchor="middle"
                     alignmentBaseline="middle"
@@ -105,7 +101,9 @@ export default function Wheel({ students = [], onWinner }) {
             </G>
           </Svg>
         </Animated.View>
-        <View style={styles.pointer} />
+
+        {/* Pointer */}
+        <View style={[styles.pointer, { top: -wheelSize * 0.03, borderBottomWidth: wheelSize * 0.07 }]} />
       </View>
 
       <Button title={spinning ? 'Spinning...' : '🎯 Spin'} onPress={spinWheel} disabled={spinning} />
@@ -117,16 +115,15 @@ const styles = StyleSheet.create({
   container: { alignItems: 'center', marginVertical: 20 },
   pointer: {
     position: 'absolute',
-    top: -10,
     left: '50%',
-    marginLeft: -30,
+    marginLeft: -10,
     width: 0,
     height: 0,
     borderLeftWidth: 10,
     borderRightWidth: 10,
-    borderBottomWidth: 20,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderBottomColor: 'red',
+    zIndex: 1,
   },
 });
