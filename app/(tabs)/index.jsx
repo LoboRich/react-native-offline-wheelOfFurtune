@@ -80,8 +80,6 @@ export default function WheelScreen() {
       return;
     }
 
-    console.log("Selected Excel file:", filePath);
-
     try {
       const response = await fetch(filePath);
       const arrayBuffer = await response.arrayBuffer();
@@ -125,15 +123,15 @@ export default function WheelScreen() {
       >
         {/* LEFT SIDE (Wheel) */}
         <View style={[styles.leftPanel, isWeb && styles.webLeft]}>
-          <Text style={styles.title}>🎡 Wheel of Fortune</Text>
           <Wheel students={students} onWinner={setWinner} />
           {winner && <Text style={styles.winner}>🎉 Winner: {winner}!</Text>}
         </View>
 
         {/* RIGHT SIDE (Input + List) */}
         <View style={[styles.rightPanel, isWeb && styles.webRight]}>
-          <select onChange={handleExcelSelect}>
-            <option value="">Select Excel File</option>
+          <Text style={styles.title}>🎡 Wheel of Fortune</Text>
+          <select onChange={handleExcelSelect} style={styles.excelSelect}>
+            <option value="">Select a class</option>
             <option value="/excel/2G.xlsx">2G</option>
             <option value="/excel/2H.xlsx">2H</option>
           </select>
@@ -287,5 +285,14 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     marginTop: 20
+  },
+  excelSelect: {
+    width: "100%",
+    padding: 10,
+    fontSize: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    marginBottom: 10
   }
 });
