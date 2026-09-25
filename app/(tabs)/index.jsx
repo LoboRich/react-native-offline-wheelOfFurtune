@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useState } from 'react';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
 import {
   Button,
   FlatList,
@@ -11,13 +11,13 @@ import {
   TextInput,
   TouchableOpacity,
   useWindowDimensions,
-  View,
-} from 'react-native';
-import Wheel from '../../src/components/Wheel';
+  View
+} from "react-native";
+import Wheel from "../../src/components/Wheel";
 
 export default function WheelScreen() {
   const [students, setStudents] = useState([]);
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const [winner, setWinner] = useState(null);
 
   const { width } = useWindowDimensions();
@@ -26,12 +26,12 @@ export default function WheelScreen() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const storedStudents = await AsyncStorage.getItem('students');
-        const storedWinner = await AsyncStorage.getItem('winner');
+        const storedStudents = await AsyncStorage.getItem("students");
+        const storedWinner = await AsyncStorage.getItem("winner");
         if (storedStudents) setStudents(JSON.parse(storedStudents));
         if (storedWinner) setWinner(storedWinner);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error("Error loading data:", error);
       }
     };
     loadData();
@@ -39,22 +39,25 @@ export default function WheelScreen() {
 
   // Save to storage
   useEffect(() => {
-    AsyncStorage.setItem('students', JSON.stringify(students));
+    AsyncStorage.setItem("students", JSON.stringify(students));
   }, [students]);
 
   useEffect(() => {
-    if (winner) AsyncStorage.setItem('winner', winner);
+    if (winner) AsyncStorage.setItem("winner", winner);
   }, [winner]);
 
   const addStudent = () => {
-    if (name.trim() === '') return;
+    if (name.trim() === "") return;
     setStudents((prev) => [...prev, name.trim()]);
-    setName('');
+    setName("");
   };
 
   const handlePaste = (text) => {
     // Split by newlines or commas (for Excel-style paste)
-    const list = text.split(/\r?\n|,/).map((s) => s.trim()).filter(Boolean);
+    const list = text
+      .split(/\r?\n|,/)
+      .map((s) => s.trim())
+      .filter(Boolean);
     setStudents((prev) => [...prev, ...list]);
   };
 
@@ -66,19 +69,19 @@ export default function WheelScreen() {
   const deleteAll = async () => {
     setStudents([]);
     setWinner(null);
-    await AsyncStorage.multiRemove(['students', 'winner']);
+    await AsyncStorage.multiRemove(["students", "winner"]);
   };
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={80}
     >
       <ScrollView
         contentContainerStyle={[
           styles.scrollContainer,
-          isWeb && styles.webLayout,
+          isWeb && styles.webLayout
         ]}
         keyboardShouldPersistTaps="handled"
       >
@@ -97,15 +100,15 @@ export default function WheelScreen() {
               placeholder="Enter or paste student names"
               value={name}
               onChangeText={(text) => {
-                if (text.includes('\n') || text.includes(',')) {
+                if (text.includes("\n") || text.includes(",")) {
                   const names = text
                     .split(/[\n,]+/)
                     .map((n) => n.trim())
-                    .filter((n) => n !== '');
+                    .filter((n) => n !== "");
                   if (names.length > 0) {
                     setStudents((prev) => [...prev, ...names]);
                   }
-                  setName('');
+                  setName("");
                 } else {
                   setName(text);
                 }
@@ -141,7 +144,11 @@ export default function WheelScreen() {
 
           {students.length > 0 && (
             <View style={styles.buttonRow}>
-              <Button title="🧹 Delete All" color="#d62828" onPress={deleteAll} />
+              <Button
+                title="🧹 Delete All"
+                color="#d62828"
+                onPress={deleteAll}
+              />
             </View>
           )}
         </View>
@@ -154,87 +161,87 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     padding: 20,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
+    backgroundColor: "#fff",
+    justifyContent: "center"
   },
   webLayout: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    gap: 30,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    gap: 30
   },
   leftPanel: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center"
   },
   webLeft: {
-    flex: 1,
+    flex: 1
   },
   rightPanel: {
-    marginTop: 30,
+    marginTop: 30
   },
   webRight: {
     flex: 1,
-    maxWidth: 400,
+    maxWidth: 400
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontWeight: "bold",
+    marginBottom: 20
   },
   winner: {
     marginTop: 10,
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0077b6',
+    fontWeight: "600",
+    color: "#0077b6"
   },
   inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 15
   },
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     padding: 10,
     borderRadius: 8,
-    fontSize: 16,
+    fontSize: 16
   },
   addBtn: {
     marginLeft: 10,
-    backgroundColor: '#0077b6',
+    backgroundColor: "#0077b6",
     padding: 10,
-    borderRadius: 8,
+    borderRadius: 8
   },
   addText: {
-    color: '#fff',
-    fontSize: 20,
+    color: "#fff",
+    fontSize: 20
   },
   studentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     borderBottomWidth: 1,
-    borderColor: '#eee',
-    paddingVertical: 8,
+    borderColor: "#eee",
+    paddingVertical: 8
   },
   studentName: {
-    fontSize: 16,
+    fontSize: 16
   },
   deleteBtn: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 10
   },
   deleteText: {
     fontSize: 18,
-    color: '#d62828',
+    color: "#d62828"
   },
   empty: {
-    textAlign: 'center',
-    color: '#888',
-    marginTop: 10,
+    textAlign: "center",
+    color: "#888",
+    marginTop: 10
   },
   buttonRow: {
-    marginTop: 20,
-  },
+    marginTop: 20
+  }
 });
