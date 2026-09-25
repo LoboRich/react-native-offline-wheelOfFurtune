@@ -8,11 +8,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   useWindowDimensions,
   View
 } from "react-native";
+import * as XLSX from "xlsx";
 import Wheel from "../../src/components/Wheel";
 
 export default function WheelScreen() {
@@ -72,6 +72,44 @@ export default function WheelScreen() {
     await AsyncStorage.multiRemove(["students", "winner"]);
   };
 
+  const handleExcelSelect = async (event) => {
+    const filePath = event.target.value;
+
+    if (!filePath) {
+      setStudents([]);
+      return;
+    }
+
+    console.log("Selected Excel file:", filePath);
+
+    try {
+      const response = await fetch(filePath);
+      const arrayBuffer = await response.arrayBuffer();
+
+      const workbook = XLSX.read(arrayBuffer, {
+        type: "array"
+      });
+
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      const rows = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1
+      });
+
+      // First column, skipping the header
+      const importedNames = rows
+        .slice(1)
+        .map((row) => String(row[0] ?? "").trim())
+        .filter(Boolean);
+
+      setStudents(importedNames);
+
+      console.log("Imported:", importedNames);
+    } catch (error) {
+      console.error("Error reading Excel:", error);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -94,7 +132,13 @@ export default function WheelScreen() {
 
         {/* RIGHT SIDE (Input + List) */}
         <View style={[styles.rightPanel, isWeb && styles.webRight]}>
-          <View style={styles.inputRow}>
+          <select onChange={handleExcelSelect}>
+            <option value="">Select Excel File</option>
+            <option value="/excel/2G.xlsx">2G</option>
+            <option value="/excel/2H.xlsx">2H</option>
+          </select>
+          <p>{students.length} participants loaded</p>
+          {/* <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
               placeholder="Enter or paste student names"
@@ -118,7 +162,7 @@ export default function WheelScreen() {
             <TouchableOpacity onPress={addStudent} style={styles.addBtn}>
               <Text style={styles.addText}>➕</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
 
           <FlatList
             data={students}
